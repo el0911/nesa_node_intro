@@ -17,6 +17,7 @@ mongo.connect('mongodb://127.0.0.1:27017/nesa',(err )=>{
 })
 
 const blog = require('./models/blog')
+const user = require('./models/users')
 
 
 app.get('/savedata',(req,res)=>{
@@ -37,10 +38,57 @@ app.get('/savedata',(req,res)=>{
     })
 })
 
+
+app.post('/login',(req,res)=>{
+    const userDetails = req.body
+    user.findOne(userDetails,(err,doc)=>{
+        if(err){
+           return res.send('i got an error')
+        }
+        else{
+            if(doc){
+                
+                return res.json({
+                    status:true,
+                    userDetail:doc
+                })
+            }
+            else{
+                return res.json({
+                    status:false,
+                    message:'no user matching details'
+                })
+            }
+        }
+    })
+    
+})
+
 app.get('/getdata',(req,res)=>{
     blog.find({'title':'somto'},(err,doc)=>{
         return res.json(doc)
     })
+})
+
+
+app.post('/register',(req,res)=>{
+
+    const userDetails = req.body
+
+    const newUser = new user(userDetails)
+
+    newUser.save((err,doc)=>{
+            if (err) {
+                console.log(err);
+                return res.send('i got an error')
+            }
+            else{
+                return res.json(doc)
+            }
+    })
+
+
+
 })
 
 app.listen(PORT,(err)=>{
