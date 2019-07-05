@@ -2,7 +2,18 @@ const express = require('express')
 const mongo = require('mongoose')
 const app = express()
 const PORT = 8888
+const cors = require('cors')
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+const Joi = require('@hapi/joi');
+app.use(cors())
 
+const schema = Joi.object().keys({
+        username:Joi.string().required().min(3).max(20),
+        password:Joi.string().required().min(6).max(13).alphanum(),
+        email:Joi.string().email().required(),
+        fullname:Joi.string().required().min(3).max(20)
+    })
 
 app.use(express.json())
 mongo.connect('mongodb://127.0.0.1:27017/nesa',(err )=>{
@@ -41,17 +52,29 @@ app.get('/savedata',(req,res)=>{
 
 app.post('/login',(req,res)=>{
     const userDetails = req.body
-    user.findOne(userDetails,(err,doc)=>{
+    const password = userDetails.password
+    user.findOne({
+        email:userDetails.email
+    },(err,doc)=>{
         if(err){
            return res.send('i got an error')
         }
         else{
             if(doc){
-                
-                return res.json({
-                    status:true,
-                    userDetail:doc
-                })
+               
+                if(bcrypt.compareSync(password, doc.password)){
+                    return res.json({
+                        status:true,
+                        userDetail:doc
+                    })
+                }
+                else{
+                    return res.json({
+                        status:false,
+                        message:'Wrong password'
+                    })
+                }
+               
             }
             else{
                 return res.json({
@@ -74,6 +97,19 @@ app.get('/getdata',(req,res)=>{
 app.post('/register',(req,res)=>{
 
     const userDetails = req.body
+    const result = Joi.validate(userDetails,schema)
+
+    const error = result.error
+    const value = result.value
+
+    if(error){
+        return res.json(error)
+    }
+    const password = userDetails.password
+    const salt = bcrypt.genSaltSync(saltRounds);
+    const hash = bcrypt.hashSync(password, salt);
+
+    userDetails.password = hash
 
     const newUser = new user(userDetails)
 
