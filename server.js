@@ -1,11 +1,12 @@
 const express = require('express')
 const mongo = require('mongoose')
 const app = express()
-const PORT = 8888
+const PORT = 8080
 const cors = require('cors')
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 const Joi = require('@hapi/joi');
+const jwt = require('jsonwebtoken')
 app.use(cors())
 
 const schema = Joi.object().keys({
@@ -50,7 +51,7 @@ app.get('/savedata',(req,res)=>{
 })
 
 
-app.post('/login',(req,res)=>{
+app.post('/signin',(req,res)=>{
     const userDetails = req.body
     const password = userDetails.password
     user.findOne({
@@ -63,9 +64,13 @@ app.post('/login',(req,res)=>{
             if(doc){
                
                 if(bcrypt.compareSync(password, doc.password)){
+
+                    const token = jwt.sign(doc.toJSON(),'parish',{
+                        expiresIn:'100h'
+                    })
                     return res.json({
                         status:true,
-                        userDetail:doc
+                        userDetail:token
                     })
                 }
                 else{
